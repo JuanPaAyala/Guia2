@@ -5,24 +5,52 @@ if(isset($_POST["login"])){
   $email     = $_POST["email"];
   $password  = $_POST["password"];
   $regex = '/^[A-z0-9\\._-]+@[A-z0-9][A-z0-9-]*(\\.[A-z0-9_-]+)*\\.([A-z]{2,6})$/';
-  if (1 === preg_match($regex , $email, $matches)) {
-    if (strlen($password > 6)) {
-      $password_md5 = md5($password);
-      // Comparar contraseñas encriptadas
-      $sql = "SELECT * FROM usertbl WHERE email = '".$email."' AND password = '".$password_md5."';";
-      $result = mysqli_query($con,$sql);
-      $num_rows = mysqli_num_rows($result);
-    
-      if($num_rows > 0){
-        $_SESSION["session_username"] = $email;
-        header("location:intropage.php");
-      }
-    } else {
-      echo 'pass';
+  $ip = $_SERVER["REMOTE_ADDR"];
+  $captcha = $_POST["g-recaptcha-response"];
+
+  $cap_key = "6LfI-bAnAAAAAOt1iZA3VhBcshdr4n9HT6GrddeC";
+
+  $url = 'https://www.google.com/recaptcha/api/siteverify';
+  $data = ['secret' => $cap_key, 'response' => $captcha, 'remoteip' => $ip];
+  $options = [
+    'http' => [
+        'header' => "Content-type: application/x-www-form-urlencoded\r\n",
+        'method' => 'POST',
+        'content' => http_build_query($data),
+    ],
+];
+$context = stream_context_create($options);
+$result = file_get_contents($url, false, $context);
+if ($result === false) {
+  /* Handle error */
+}else{
+$rst_captcha = json_decode($result, TRUE);
+}if($rst_captcha["success"])
+  print("validacion Recaptcha OK");
+else
+  print("validacion Recaptcha MAL");
+  
+if (1 === preg_match($regex , $email, $matches)) {
+  if (strlen($password > 5)) {
+    $password_md5 = md5($password);
+    // Comparar contraseñas encriptadas
+    $sql = "SELECT * FROM usertbl WHERE email = '".$email."' AND password = '".$password_md5."';";
+    $result = mysqli_query($con,$sql);
+    $num_rows = mysqli_num_rows($result);
+  
+    if($num_rows > 0){
+      $_SESSION["session_username"] = $email;
+      header("location:intropage.php");
     }
   } else {
-    echo 'malll';
+    echo 'pass';
   }
+} else {
+  echo 'malll';
+}
+
+  
+
 }
 ?>
 
@@ -33,6 +61,7 @@ if(isset($_POST["login"])){
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Guia 1 demo</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
   </head>
   <body style="margin: 10%;">
@@ -54,13 +83,14 @@ if(isset($_POST["login"])){
           <input type="checkbox" class="form-check-input" id="exampleCheck1">
           <label class="form-check-label" for="exampleCheck1">Check me out tyc</label>
         </div>
+        <div class="g-recaptcha" data-sitekey="6LfI-bAnAAAAAKpuW30Xo7_c_pbKETR2vkMv_xP5"></div>
         <button type="submit" name="login" class="btn btn-primary">Submit</button>
     </form>
 
     <script>
       $(document).ready(function() {
         $('#form').submit(function(event) {
-          if ($('#pass').val().length <= 6) {
+          if ($('#pass').val().length <= 5) {
             alert("La contraseña debe tener más de 6 caracteres.");
             event.preventDefault();
           } else {
