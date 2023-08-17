@@ -9,7 +9,6 @@ if(isset($_POST["register"])){
   // print($email);
   $regex = '/^[A-z0-9\\._-]+@[A-z0-9][A-z0-9-]*(\\.[A-z0-9_-]+)*\\.([A-z]{2,6})$/';
   // print(preg_match($regex , $email, $matches));
-
   if (1 === preg_match($regex , $email, $matches)) {
     if (strlen($password > 6)) {
       $password_md5 = md5($password);
